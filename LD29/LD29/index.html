@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>LD29</title>
+    <link rel="stylesheet" href="app.css" type="text/css" />
+    <script src="app.js"></script>
+    <script src="three.min.js"></script>
+    <script src="Detector.js"></script>
+    <script src="md5.js"></script>
+    <script src="gamepad.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+    <script>
+        function getItem  (sKey) {
+            return decodeURIComponent(document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1")) || "";
+        }
+        function setItem (sKey, sValue, vEnd, sPath, sDomain, bSecure) {
+            if (!sKey || /^(?:expires|max\-age|path|domain|secure)$/i.test(sKey)) { return false; }
+            var sExpires = "";
+            if (vEnd) {
+                switch (vEnd.constructor) {
+                    case Number:
+                        sExpires = vEnd === Infinity ? "; expires=Fri, 31 Dec 9999 23:59:59 GMT" : "; max-age=" + vEnd;
+                        break;
+                    case String:
+                        sExpires = "; expires=" + vEnd;
+                        break;
+                    case Date:
+                        sExpires = "; expires=" + vEnd.toUTCString();
+                        break;
+                }
+            }
+            document.cookie = encodeURIComponent(sKey) + "=" + encodeURIComponent(sValue) + sExpires + (sDomain ? "; domain=" + sDomain : "") + (sPath ? "; path=" + sPath : "") + (bSecure ? "; secure" : "");
+            return true;
+        }
+        function doGameJolt(cmd,func) {
+            var signature = md5(cmd + '9afefca0c42ade8e4ece8aa50184c88d');
+            cmd = cmd + '&signature=' + signature;
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    var response = JSON.parse(xmlhttp.responseText);
+                    func(response);
+                }
+            }
+
+            xmlhttp.open("GET", cmd, true);
+            xmlhttp.send();
+        }
+        function submitScore() {
+            name = document.getElementById('name').value;
+            score = document.getElementById('score').innerHTML;
+            setItem('name', name);
+            var cmd = 'http://gamejolt.com/api/game/v1/scores/add/?game_id=25662&format=json&score=' + score + '&sort=' + score + '&guest=' + encodeURIComponent(name);
+            doGameJolt(cmd, function() {
+                var cmd = 'http://gamejolt.com/api/game/v1/scores/?game_id=25662&format=json&limit=100';
+                doGameJolt(cmd, function(js) {
+                    var c = document.getElementById('content');
+                    c.innerHTML = "<h3>High Scores</h3>";
+                    for (var i = 0; i < js.response.scores.length; i++) {
+                        c.innerHTML += js.response.scores[i].guest + ': ' + js.response.scores[i].score + "<br>";
+                    }
+                    c.innerHTML += '<br><br><input type="button" value="Restart" onClick="window.location.reload()">';
+                });
+            });
+        }
+    </script>
+</head>
+    <body style='margin:0;'><center>
+              <div style='width: 800px;'>
+                  <h1 id='scor3e' style='display:none;'></h1>
+                  <table id='scores' style="text-align:left; font-style:normal; width:98%; margin-top:-12px; margin-bottom: -10px;">
+                      <tr>
+                          <td style="width:50%; position:relative; vertical-align: bottom;">
+                              <span id="score" style="font-size:4em; font-style:normal;"></span>
+                              <span id="addScore" style="font-size:2em; font-style:normal;"></span>
+                          </td>
+                          <td style="text-align: left; width:50%; right:0; font-style:normal;  position:relative; vertical-align: bottom;">
+                              <span id='nextScore' style="font-size:2.7em; font-style:normal;"></span>
+                              <span id='combo' style="font-size:1.9em; width: 70px; font-style:normal;"></span>
+                          </td>
+                      </tr>
+                  </table>
+                  <div id="content">
+                  </div>
+                  <div id="directions">WASD to move<br />
+                      Arrows/IJKL to shoot<br/>
+                      Space to Dive<br/>
+                      refresh to restart<br/><br/>
+                  <div id="controller" style="display:none;">Left Stick or DPAD to move<br/>Right Stick to shoot<br/>Face Buttons to Dive<br/>Start to reload</div></div>
+                 <br/><br /><br /> a game by <a href='twitter.com/zacaj_'>@zacaj_</a>
+               </div>
+</center>
+</body>
+</html>
